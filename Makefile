@@ -3,11 +3,7 @@
 $(if $(filter true,$(sdkloaded)),,$(error You must install bblfsh-sdk))
 
 test-native-internal:
-	cd native; \
-	echo "not implemented"
+	go test ./native
 
 build-native-internal:
-	cd native; \
-	echo "not implemented"
-	echo -e "#!/bin/bash\necho 'not implemented'" > $(BUILD_PATH)/bin/native
-	chmod +x $(BUILD_PATH)/bin/native
+	go build -o $(BUILD_PATH)/bin/native ./native 
