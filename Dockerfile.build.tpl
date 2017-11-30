@@ -22,6 +22,8 @@ RUN curl https://storage.googleapis.com/golang/go1.9.2.linux-amd64.tar.gz -O && 
     tar -C /usr/local -xzf go1.9.2.linux-amd64.tar.gz
 
 ENV PATH="/usr/local/go/bin:${PATH}"
+ENV GOPATH="/opt/driver"
+ENV CONTAINER="yes"
 
 # A nasty hack to make the Go binary work on alpine.
 # See https://stackoverflow.com/questions/34729748/installed-go-binary-not-found-in-path-on-alpine-linux-docker.

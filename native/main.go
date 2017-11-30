@@ -37,27 +37,39 @@ func main() {
 }
 
 type request struct {
-	Content string `json:"content"`
+	Content  string
+	Language string
 }
 
 type response struct {
-	Status string   `json:"status"`
-	Errors []string `json:"errors,omitempty"`
-	AST    ast.Node `json:"ast,omitempty"`
-
-	// TODO: what should metadata contain?
+	Status string
+	Errors []string
+	AST    interface{}
 }
 
 func handle(req *request) *response {
-	fs := token.NewFileSet()
-	f, err := parser.ParseFile(fs, "", req.Content, parser.ParseComments)
-	if err != nil {
-		return &response{Status: "fatal", Errors: []string{err.Error()}}
+	f, err := parse(req.Content)
+	res := &response{
+		Status: "ok",
+		AST:    f,
 	}
+	if err != nil {
+		res.Status = "fatal"
+		res.Errors = append(res.Errors, err.Error())
+	}
+	return res
+}
 
+func parse(content string) (interface{}, error) {
+	fs := token.NewFileSet()
+	f, err := parser.ParseFile(fs, "", content, parser.AllErrors)
+	if err != nil {
+		return nil, err
+	}
 	ast.Walk(astFilter{}, f)
-
-	return &response{Status: "ok", AST: f}
+	return struct {
+		File *ast.File `json:"file"`
+	}{f}, nil
 }
 
 // astFilter removes all unnecessary elements for the UAST.

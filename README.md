@@ -1,7 +1,6 @@
-# golang-driver  ![Driver Status](https://img.shields.io/badge/status-planning-e08dd1.svg) [![Build Status](https://travis-ci.org/bblfsh/golang-driver.svg?branch=master)](https://travis-ci.org/bblfsh/golang-driver) ![Native Version](https://img.shields.io/badge/golang%20version--aa93ea.svg) ![Go Version](https://img.shields.io/badge/go%20version-1.8-63afbf.svg)
+# golang-driver  ![Driver Status](https://img.shields.io/badge/status-pre--alpha-d6ae86.svg) [![Build Status](https://travis-ci.org/bblfsh/golang-driver.svg?branch=master)](https://travis-ci.org/bblfsh/golang-driver) ![Native Version](https://img.shields.io/badge/golang%20version-1.9.2-aa93ea.svg) ![Go Version](https://img.shields.io/badge/go%20version-1.9.2-63afbf.svg)
 
 golang driver for [babelfish](https://github.com/bblfsh/server).
-
 
 Development Environment
 -----------------------
