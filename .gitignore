@@ -1,2 +1,5 @@
 .sdk
 build
+
+# bin
+golang-driver
