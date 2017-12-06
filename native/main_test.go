@@ -1,20 +1,56 @@
 package main
 
 import (
-	"go/ast"
-	"go/token"
+	"log"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"gopkg.in/bblfsh/sdk.v1/uast"
 )
+
+func roles(rs ...uast.Role) []uast.Role { return rs }
+
+func props(vs ...string) map[string]string {
+	m := make(map[string]string)
+	if len(vs)%2 != 0 {
+		log.Fatal("bad props value, list is not even")
+	}
+	for i := 0; i < len(vs); i += 2 {
+		m[vs[i]] = vs[i+1]
+	}
+	return m
+}
+
+func leaf(name string, role uast.Role, ps ...string) *uast.Node {
+	var rs []uast.Role
+	if role != 0 {
+		rs = []uast.Role{role}
+	}
+	return &uast.Node{InternalType: name, Roles: rs, Properties: props(ps...)}
+}
+
+func node(name string, role uast.Role, props map[string]string, children []*uast.Node) *uast.Node {
+	var roles []uast.Role
+	if role != 0 {
+		roles = []uast.Role{role}
+	}
+	return &uast.Node{
+		InternalType: name,
+		Properties:   props,
+		Roles:        roles,
+		Children:     children,
+	}
+}
+
+func children(n ...*uast.Node) []*uast.Node { return n }
 
 func TestHandle(t *testing.T) {
 	tt := []struct {
 		name    string
 		content string
 		err     string
-		ast     ast.Node
+		ast     *uast.Node
 	}{
 		{
 			name:    "empty file",
@@ -24,61 +60,69 @@ func TestHandle(t *testing.T) {
 		{
 			name:    "just package main",
 			content: "package main",
-			ast: &ast.File{
-				Package: 1,
-				Name:    &ast.Ident{NamePos: 9, Name: "main"},
-			},
+			ast: node("File", uast.File, nil, children(
+				node("Name", uast.Identifier, props("Name", "main"), nil),
+			)),
 		},
 		{
-			name:    "hello world",
-			content: "package main\nimport \"fmt\"\nfunc main() { fmt.Println(\"hello\") }",
-			ast: &ast.File{
-				Package: 1,
-				Name:    &ast.Ident{NamePos: 9, Name: "main"},
-				Decls: []ast.Decl{
-					&ast.GenDecl{TokPos: 14, Tok: token.IMPORT, Specs: []ast.Spec{
-						&ast.ImportSpec{Path: &ast.BasicLit{ValuePos: 21, Kind: token.STRING, Value: `"fmt"`}},
-					}},
-					&ast.FuncDecl{
-						Name: &ast.Ident{NamePos: 32, Name: "main"},
-						Type: &ast.FuncType{Func: 27, Params: &ast.FieldList{Opening: 36, Closing: 37}},
-						Body: &ast.BlockStmt{
-							Lbrace: 39,
-							List: []ast.Stmt{
-								&ast.ExprStmt{
-									X: &ast.CallExpr{
-										Fun: &ast.SelectorExpr{
-											X:   &ast.Ident{NamePos: 41, Name: "fmt"},
-											Sel: &ast.Ident{NamePos: 45, Name: "Println"},
-										},
-										Lparen: 52,
-										Args: []ast.Expr{&ast.BasicLit{
-											ValuePos: 53,
-											Kind:     token.STRING,
-											Value:    `"hello"`,
-										}},
-										Rparen: 60},
-								},
-							},
-							Rbrace: 62,
-						},
-					},
-				},
-			},
+			name: "hello world",
+			content: `
+				package main
+				
+				import "fmt"
+				
+				func main() {
+					fmt.Println("hello")
+				}`,
+			ast: node("File", uast.File, nil, children(
+				node("Name", uast.Identifier, props("Name", "main"), nil),
+				node("Decls", 0, nil, children(
+					node("GenDecl", 0, props("Tok", "import"), children(
+						node("Specs", 0, nil, children(
+							node("ImportSpec", uast.Import, nil, children(
+								node("Path", 0, props("Kind", "STRING", "Value", "\"fmt\""), nil),
+							)),
+						)),
+					)),
+					node("FuncDecl", uast.Function, nil, children(
+						node("Name", uast.Identifier, props("Name", "main"), nil),
+						node("Type", uast.Type, nil, children(
+							node("Params", uast.ArgsList, nil, nil),
+						)),
+						node("Body", uast.Block, nil, children(
+							node("List", 0, nil, children(
+								node("ExprStmt", uast.Statement, nil, children(
+									node("X", uast.Call, nil, children(
+										node("Fun", 0, nil, children(
+											node("X", uast.Identifier, props("Name", "fmt"), nil),
+											node("Sel", uast.Identifier, props("Name", "Println"), nil),
+										)),
+										node("Args", 0, nil, children(
+											node("BasicLit", 0, props("Kind", "STRING", "Value", "\"hello\""), nil),
+										)),
+									)),
+								)),
+							)),
+						)),
+					)),
+				)),
+			)),
 		},
 	}
 
+	ignorePos := cmp.Comparer(func(a, b *uast.Position) bool { return true })
+
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			res := handle(&request{Content: tc.content})
-			if tc.err == "" && res.Status != "ok" {
-				t.Fatalf("unexpected error: %s (%v)", res.Status, res.Errors)
+			res, err := parse(tc.content)
+			if tc.err == "" && err != nil {
+				t.Fatalf("unexpected error: %s", err)
 			}
-			if tc.err != "" && res.Status == "ok" {
+			if tc.err != "" && err == nil {
 				t.Fatalf("expected error %q; got ok", tc.err)
 			}
-			if !cmp.Equal(tc.ast, res.AST, cmpopts.EquateEmpty()) {
-				t.Fatalf("different ASTs: %s", cmp.Diff(tc.ast, res.AST, cmpopts.EquateEmpty()))
+			if !cmp.Equal(tc.ast, res, cmpopts.EquateEmpty(), ignorePos) {
+				t.Fatalf("different ASTs: %s", cmp.Diff(tc.ast, res, cmpopts.EquateEmpty(), ignorePos))
 			}
 		})
 	}
