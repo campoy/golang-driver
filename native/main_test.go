@@ -9,8 +9,6 @@ import (
 	"gopkg.in/bblfsh/sdk.v1/uast"
 )
 
-func roles(rs ...uast.Role) []uast.Role { return rs }
-
 func props(vs ...string) map[string]string {
 	m := make(map[string]string)
 	if len(vs)%2 != 0 {
@@ -90,6 +88,33 @@ func TestHandle(t *testing.T) {
 										node("Args", 0, nil,
 											node("BasicLit", 0, props("Kind", "STRING", "Value", "\"hello\"")),
 										),
+									),
+								),
+							),
+						),
+					),
+				),
+			),
+		},
+		{
+			name: "constant definition",
+			content: `
+				package constants
+				
+				const a = 40 + 2`,
+			ast: node("File", uast.File, nil,
+				node("Name", uast.Identifier, props("Name", "constants")),
+				node("Decls", 0, nil,
+					node("GenDecl", 0, props("Tok", "const"),
+						node("Specs", 0, nil,
+							node("ValueSpec", 0, nil,
+								node("Names", 0, nil,
+									node("Ident", uast.Identifier, props("Name", "a")),
+								),
+								node("Values", 0, nil,
+									node("BinaryExpr", uast.Binary, props("Op", "+"),
+										node("X", 0, props("Kind", "INT", "Value", "40")),
+										node("Y", 0, props("Kind", "INT", "Value", "2")),
 									),
 								),
 							),

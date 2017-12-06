@@ -104,41 +104,40 @@ func tree(fs *token.FileSet, node ast.Node) *uast.Node {
 		field := v.Field(i)
 		value := field.Interface()
 
-		if v, ok := value.(ast.Node); ok {
-			if child := tree(fs, v); child != nil {
+		switch v := value.(type) {
+		case ast.Node:
+			if child := tree(fs, v.(ast.Node)); child != nil {
 				child.InternalType = name
 				root.Children = append(root.Children, child)
 			}
 			continue
-		}
-
-		if _, ok := value.(token.Pos); ok {
-			// the positions are already in the root node.
+		case nil, token.Pos:
 			continue
+		default:
 		}
 
-		if field.Kind() != reflect.Slice {
-			root.Properties[name] = fmt.Sprint(field)
-			continue
-		}
-
-		if field.Len() == 0 {
-			continue
-		}
-
-		slice := &uast.Node{InternalType: name}
-		if role, ok := rolesByName[name]; ok {
-			slice.Roles = append(slice.Roles, role)
-		}
-		for i := 0; i < field.Len(); i++ {
-			e := field.Index(i).Interface()
-			if n, ok := e.(ast.Node); ok {
-				slice.Children = append(slice.Children, tree(fs, n))
-			} else {
-				panic(fmt.Sprintf("found slice of non nodes: %T", e))
+		switch field.Kind() {
+		case reflect.Slice:
+			if field.Len() == 0 {
+				continue
 			}
+			slice := &uast.Node{InternalType: name}
+			if role, ok := rolesByName[name]; ok {
+				slice.Roles = append(slice.Roles, role)
+			}
+			for i := 0; i < field.Len(); i++ {
+				e := field.Index(i).Interface()
+				if n, ok := e.(ast.Node); ok {
+					slice.Children = append(slice.Children, tree(fs, n))
+				} else {
+					panic(fmt.Sprintf("found slice of non nodes: %T", e))
+				}
+			}
+			root.Children = append(root.Children, slice)
+
+		default:
+			root.Properties[name] = fmt.Sprint(field)
 		}
-		root.Children = append(root.Children, slice)
 	}
 
 	return root
