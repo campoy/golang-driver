@@ -22,15 +22,7 @@ func props(vs ...string) map[string]string {
 	return m
 }
 
-func leaf(name string, role uast.Role, ps ...string) *uast.Node {
-	var rs []uast.Role
-	if role != 0 {
-		rs = []uast.Role{role}
-	}
-	return &uast.Node{InternalType: name, Roles: rs, Properties: props(ps...)}
-}
-
-func node(name string, role uast.Role, props map[string]string, children []*uast.Node) *uast.Node {
+func node(name string, role uast.Role, props map[string]string, children ...*uast.Node) *uast.Node {
 	var roles []uast.Role
 	if role != 0 {
 		roles = []uast.Role{role}
@@ -42,8 +34,6 @@ func node(name string, role uast.Role, props map[string]string, children []*uast
 		Children:     children,
 	}
 }
-
-func children(n ...*uast.Node) []*uast.Node { return n }
 
 func TestHandle(t *testing.T) {
 	tt := []struct {
@@ -60,9 +50,9 @@ func TestHandle(t *testing.T) {
 		{
 			name:    "just package main",
 			content: "package main",
-			ast: node("File", uast.File, nil, children(
-				node("Name", uast.Identifier, props("Name", "main"), nil),
-			)),
+			ast: node("File", uast.File, nil,
+				node("Name", uast.Identifier, props("Name", "main")),
+			),
 		},
 		{
 			name: "hello world",
@@ -74,39 +64,39 @@ func TestHandle(t *testing.T) {
 				func main() {
 					fmt.Println("hello")
 				}`,
-			ast: node("File", uast.File, nil, children(
-				node("Name", uast.Identifier, props("Name", "main"), nil),
-				node("Decls", 0, nil, children(
-					node("GenDecl", 0, props("Tok", "import"), children(
-						node("Specs", 0, nil, children(
-							node("ImportSpec", uast.Import, nil, children(
-								node("Path", 0, props("Kind", "STRING", "Value", "\"fmt\""), nil),
-							)),
-						)),
-					)),
-					node("FuncDecl", uast.Function, nil, children(
-						node("Name", uast.Identifier, props("Name", "main"), nil),
-						node("Type", uast.Type, nil, children(
-							node("Params", uast.ArgsList, nil, nil),
-						)),
-						node("Body", uast.Block, nil, children(
-							node("List", 0, nil, children(
-								node("ExprStmt", uast.Statement, nil, children(
-									node("X", uast.Call, nil, children(
-										node("Fun", 0, nil, children(
-											node("X", uast.Identifier, props("Name", "fmt"), nil),
-											node("Sel", uast.Identifier, props("Name", "Println"), nil),
-										)),
-										node("Args", 0, nil, children(
-											node("BasicLit", 0, props("Kind", "STRING", "Value", "\"hello\""), nil),
-										)),
-									)),
-								)),
-							)),
-						)),
-					)),
-				)),
-			)),
+			ast: node("File", uast.File, nil,
+				node("Name", uast.Identifier, props("Name", "main")),
+				node("Decls", 0, nil,
+					node("GenDecl", 0, props("Tok", "import"),
+						node("Specs", 0, nil,
+							node("ImportSpec", uast.Import, nil,
+								node("Path", 0, props("Kind", "STRING", "Value", "\"fmt\"")),
+							),
+						),
+					),
+					node("FuncDecl", uast.Function, nil,
+						node("Name", uast.Identifier, props("Name", "main")),
+						node("Type", uast.Type, nil,
+							node("Params", uast.ArgsList, nil),
+						),
+						node("Body", uast.Block, nil,
+							node("List", 0, nil,
+								node("ExprStmt", uast.Statement, nil,
+									node("X", uast.Call, nil,
+										node("Fun", 0, nil,
+											node("X", uast.Identifier, props("Name", "fmt")),
+											node("Sel", uast.Identifier, props("Name", "Println")),
+										),
+										node("Args", 0, nil,
+											node("BasicLit", 0, props("Kind", "STRING", "Value", "\"hello\"")),
+										),
+									),
+								),
+							),
+						),
+					),
+				),
+			),
 		},
 	}
 
