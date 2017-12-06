@@ -2,16 +2,40 @@
 
 
 [[projects]]
+  name = "github.com/gogo/protobuf"
+  packages = ["gogoproto","proto","protoc-gen-gogo/descriptor"]
+  revision = "342cbe0a04158f6dcb03ca0079991a51a4248c02"
+  version = "v0.5"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/golang/protobuf"
+  packages = ["proto"]
+  revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
+
+[[projects]]
   name = "github.com/google/go-cmp"
   packages = ["cmp","cmp/cmpopts","cmp/internal/diff","cmp/internal/function","cmp/internal/value"]
   revision = "8099a9787ce5dc5984ed879a3bda47dc730a8e97"
   version = "v0.1.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/mcuadros/go-lookup"
+  packages = ["."]
+  revision = "5650f26be7675b629fff8356a50d906fa03e9c8b"
+
+[[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
-  version = "v1.0.3"
+  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
+  version = "v1.0.4"
 
 [[projects]]
   branch = "master"
@@ -23,11 +47,23 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "316e9227019baa6ea3f76ea21538bab101fd1182"
+  revision = "8b4580aae2a0dd0c231a45d3ccb8434ff533b840"
+
+[[projects]]
+  name = "gopkg.in/bblfsh/sdk.v1"
+  packages = ["uast"]
+  revision = "baaf2b70b5ab66697e2f91def42621321f6b15c4"
+  version = "v1.9.2"
+
+[[projects]]
+  name = "gopkg.in/src-d/go-errors.v1"
+  packages = ["."]
+  revision = "8bbbeeb767dfdd053b9b45d5a16a4f4ce2c6f694"
+  version = "v1.0.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5d2e47bf1346d9f5d30e4c3801cd6aaf02abb67f3f21fce7f73f88527a6e858b"
+  inputs-digest = "ca386486cf0a4407f8413d546c0584ebd2f0957a218bb0129068ab7dd8ba75d0"
   solver-name = "gps-cdcl"
   solver-version = 1
