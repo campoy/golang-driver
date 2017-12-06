@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/bblfsh/golang-driver/driver/normalizer"
+	"github.com/campoy/golang-driver/driver/normalizer"
 
 	"gopkg.in/bblfsh/sdk.v1/sdk/driver"
 )
