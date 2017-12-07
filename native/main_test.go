@@ -1,12 +1,12 @@
 package main
 
 import (
+	"go/token"
 	"log"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"gopkg.in/bblfsh/sdk.v1/uast"
 )
 
 func props(vs ...string) map[string]string {
@@ -20,15 +20,11 @@ func props(vs ...string) map[string]string {
 	return m
 }
 
-func node(name string, role uast.Role, props map[string]string, children ...*uast.Node) *uast.Node {
-	var roles []uast.Role
-	if role != 0 {
-		roles = []uast.Role{role}
-	}
-	return &uast.Node{
-		InternalType: name,
+func n(name, typ string, props map[string]string, children ...*node) *node {
+	return &node{
+		InternalName: name,
+		InternalType: typ,
 		Properties:   props,
-		Roles:        roles,
 		Children:     children,
 	}
 }
@@ -38,7 +34,7 @@ func TestHandle(t *testing.T) {
 		name    string
 		content string
 		err     string
-		ast     *uast.Node
+		ast     *node
 	}{
 		{
 			name:    "empty file",
@@ -48,8 +44,8 @@ func TestHandle(t *testing.T) {
 		{
 			name:    "just package main",
 			content: "package main",
-			ast: node("File", uast.File, nil,
-				node("Name", uast.Identifier, props("Name", "main")),
+			ast: n("", "File", nil,
+				n("Name", "Ident", props("Name", "main")),
 			),
 		},
 		{
@@ -62,31 +58,31 @@ func TestHandle(t *testing.T) {
 				func main() {
 					fmt.Println("hello")
 				}`,
-			ast: node("File", uast.File, nil,
-				node("Name", uast.Identifier, props("Name", "main")),
-				node("Decls", 0, nil,
-					node("GenDecl", 0, props("Tok", "import"),
-						node("Specs", 0, nil,
-							node("ImportSpec", uast.Import, nil,
-								node("Path", 0, props("Kind", "STRING", "Value", "\"fmt\"")),
+			ast: n("", "File", nil,
+				n("Name", "Ident", props("Name", "main")),
+				n("Decls", "ListOfDecl", nil,
+					n("", "GenDecl", props("Tok", "import"),
+						n("Specs", "ListOfSpec", nil,
+							n("", "ImportSpec", nil,
+								n("Path", "BasicLit", props("Kind", "STRING", "Value", "\"fmt\"")),
 							),
 						),
 					),
-					node("FuncDecl", uast.Function, nil,
-						node("Name", uast.Identifier, props("Name", "main")),
-						node("Type", uast.Type, nil,
-							node("Params", uast.ArgsList, nil),
+					n("", "FuncDecl", nil,
+						n("Name", "Ident", props("Name", "main")),
+						n("Type", "FuncType", nil,
+							n("Params", "FieldList", nil),
 						),
-						node("Body", uast.Block, nil,
-							node("List", 0, nil,
-								node("ExprStmt", uast.Statement, nil,
-									node("X", uast.Call, nil,
-										node("Fun", 0, nil,
-											node("X", uast.Identifier, props("Name", "fmt")),
-											node("Sel", uast.Identifier, props("Name", "Println")),
+						n("Body", "BlockStmt", nil,
+							n("List", "ListOfStmt", nil,
+								n("", "ExprStmt", nil,
+									n("X", "CallExpr", nil,
+										n("Fun", "SelectorExpr", nil,
+											n("X", "Ident", props("Name", "fmt")),
+											n("Sel", "Ident", props("Name", "Println")),
 										),
-										node("Args", 0, nil,
-											node("BasicLit", 0, props("Kind", "STRING", "Value", "\"hello\"")),
+										n("Args", "ListOfExpr", nil,
+											n("", "BasicLit", props("Kind", "STRING", "Value", "\"hello\"")),
 										),
 									),
 								),
@@ -102,19 +98,19 @@ func TestHandle(t *testing.T) {
 				package constants
 				
 				const a = 40 + 2`,
-			ast: node("File", uast.File, nil,
-				node("Name", uast.Identifier, props("Name", "constants")),
-				node("Decls", 0, nil,
-					node("GenDecl", 0, props("Tok", "const"),
-						node("Specs", 0, nil,
-							node("ValueSpec", 0, nil,
-								node("Names", 0, nil,
-									node("Ident", uast.Identifier, props("Name", "a")),
+			ast: n("", "File", nil,
+				n("Name", "Ident", props("Name", "constants")),
+				n("Decls", "ListOfDecl", nil,
+					n("", "GenDecl", props("Tok", "const"),
+						n("Specs", "ListOfSpec", nil,
+							n("", "ValueSpec", nil,
+								n("Names", "ListOfIdent", nil,
+									n("", "Ident", props("Name", "a")),
 								),
-								node("Values", 0, nil,
-									node("BinaryExpr", uast.Binary, props("Op", "+"),
-										node("X", 0, props("Kind", "INT", "Value", "40")),
-										node("Y", 0, props("Kind", "INT", "Value", "2")),
+								n("Values", "ListOfExpr", nil,
+									n("", "BinaryExpr", props("Op", "+"),
+										n("X", "BasicLit", props("Kind", "INT", "Value", "40")),
+										n("Y", "BasicLit", props("Kind", "INT", "Value", "2")),
 									),
 								),
 							),
@@ -125,7 +121,7 @@ func TestHandle(t *testing.T) {
 		},
 	}
 
-	ignorePos := cmp.Comparer(func(a, b *uast.Position) bool { return true })
+	ignorePos := cmp.Comparer(func(a, b token.Pos) bool { return true })
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {

@@ -12,7 +12,6 @@ import (
 	"reflect"
 
 	"github.com/sirupsen/logrus"
-	"gopkg.in/bblfsh/sdk.v1/uast"
 )
 
 func main() {
@@ -63,7 +62,16 @@ func handle(req *request) *response {
 	return res
 }
 
-func parse(content string) (*uast.Node, error) {
+type node struct {
+	InternalType string            `json:",omitempty"`
+	InternalName string            `json:",omitempty"`
+	Properties   map[string]string `json:",omitempty"`
+	Children     []*node           `json:",omitempty"`
+	StartOffset  token.Pos         `json:",omitempty"`
+	EndOffset    token.Pos         `json:",omitempty"`
+}
+
+func parse(content string) (*node, error) {
 	fs := token.NewFileSet()
 	f, err := parser.ParseFile(fs, "", content, parser.AllErrors)
 	if err != nil {
@@ -72,12 +80,8 @@ func parse(content string) (*uast.Node, error) {
 	return tree(fs, f), nil
 }
 
-func position(pos token.Pos) *uast.Position {
-	return &uast.Position{Offset: uint32(pos)}
-}
-
-func tree(fs *token.FileSet, node ast.Node) *uast.Node {
-	v := reflect.ValueOf(node)
+func tree(fs *token.FileSet, n ast.Node) *node {
+	v := reflect.ValueOf(n)
 	if v.IsNil() {
 		return nil
 	}
@@ -86,14 +90,11 @@ func tree(fs *token.FileSet, node ast.Node) *uast.Node {
 	}
 	t := v.Type()
 
-	root := &uast.Node{
-		InternalType:  t.Name(),
-		StartPosition: position(node.Pos()),
-		EndPosition:   position(node.End()),
-		Properties:    make(map[string]string),
-	}
-	if role, ok := rolesByName[root.InternalType]; ok {
-		root.Roles = append(root.Roles, role)
+	root := &node{
+		InternalType: t.Name(),
+		StartOffset:  n.Pos() - 1,
+		EndOffset:    n.End() - 1,
+		Properties:   make(map[string]string),
 	}
 
 	for i := 0; i < t.NumField(); i++ {
@@ -107,7 +108,7 @@ func tree(fs *token.FileSet, node ast.Node) *uast.Node {
 		switch v := value.(type) {
 		case ast.Node:
 			if child := tree(fs, v.(ast.Node)); child != nil {
-				child.InternalType = name
+				child.InternalName = name
 				root.Children = append(root.Children, child)
 			}
 			continue
@@ -121,10 +122,7 @@ func tree(fs *token.FileSet, node ast.Node) *uast.Node {
 			if field.Len() == 0 {
 				continue
 			}
-			slice := &uast.Node{InternalType: name}
-			if role, ok := rolesByName[name]; ok {
-				slice.Roles = append(slice.Roles, role)
-			}
+			slice := &node{InternalName: name, InternalType: listTypeName(field)}
 			for i := 0; i < field.Len(); i++ {
 				e := field.Index(i).Interface()
 				if n, ok := e.(ast.Node); ok {
@@ -143,46 +141,17 @@ func tree(fs *token.FileSet, node ast.Node) *uast.Node {
 	return root
 }
 
-var typeOfNode = reflect.TypeOf(new(ast.Node)).Elem()
+func listTypeName(v reflect.Value) string {
+	t := v.Type().Elem()
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return "ListOf" + t.Name()
+}
 
 var ignoredFields = map[string]bool{
 	"Imports":    true,
 	"Scope":      true,
 	"Obj":        true,
 	"Unresolved": true,
-}
-
-var rolesByName = map[string]uast.Role{
-	"Ident":      uast.Identifier,
-	"BinaryExpr": uast.Binary,
-	"UnaryExpr":  uast.Unary,
-	// TODO: which one is correct?
-	// "ExprStmt":           uast.Expression,
-	"ExprStmt":      uast.Statement,
-	"File":          uast.File,
-	"Package":       uast.Package,
-	"DeclStmt":      uast.Declaration,
-	"ImportSpec":    uast.Import,
-	"FuncDecl":      uast.Function,
-	"FuncLit":       uast.Function,
-	"FieldList":     uast.ArgsList,
-	"IfStmt":        uast.If,
-	"SwitchStmt":    uast.Switch,
-	"CaseClause":    uast.Case,
-	"ForStmt":       uast.For,
-	"BlockStmt":     uast.Block,
-	"ReturnStmt":    uast.Return,
-	"CallExpr":      uast.Call,
-	"SliceExpr":     uast.List,
-	"TypeSpec":      uast.Type,
-	"ArrayType":     uast.Type,
-	"ChanType":      uast.Type,
-	"FuncType":      uast.Type,
-	"InterfaceType": uast.Type,
-	"MapType":       uast.Type,
-	"StructType":    uast.Type,
-	"Type":          uast.Type,
-	"AssignStmt":    uast.Assignment,
-	"Comment":       uast.Comment,
-	"Var":           uast.Variable,
 }

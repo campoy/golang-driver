@@ -1,0 +1,94 @@
+{
+    "EndOffset": 34,
+    "StartOffset": 14,
+    "Properties": {
+        "Tok": "const"
+    },
+    "InternalType": "GenDecl",
+    "Children": [
+        {
+            "Children": [
+                {
+                    "EndOffset": 34,
+                    "StartOffset": 20,
+                    "Children": [
+                        {
+                            "InternalName": "Names",
+                            "Children": [
+                                {
+                                    "EndOffset": 21,
+                                    "StartOffset": 20,
+                                    "Properties": {
+                                        "Name": "a"
+                                    },
+                                    "InternalType": "Ident"
+                                }
+                            ],
+                            "InternalType": "ListOfIdent"
+                        },
+                        {
+                            "InternalType": "ListOfExpr",
+                            "Children": [
+                                {
+                                    "EndOffset": 34,
+                                    "StartOffset": 24,
+                                    "Properties": {
+                                        "Op": "+"
+                                    },
+                                    "InternalType": "BinaryExpr",
+                                    "Children": [
+                                        {
+                                            "InternalName": "X",
+                                            "EndOffset": 25,
+                                            "StartOffset": 24,
+                                            "Properties": {
+                                                "Kind": "INT",
+                                                "Value": "3"
+                                            },
+                                            "InternalType": "BasicLit"
+                                        },
+                                        {
+                                            "InternalType": "BinaryExpr",
+                                            "Children": [
+                                                {
+                                                    "Properties": {
+                                                        "Value": "5",
+                                                        "Kind": "INT"
+                                                    },
+                                                    "InternalType": "BasicLit",
+                                                    "InternalName": "X",
+                                                    "EndOffset": 29,
+                                                    "StartOffset": 28
+                                                },
+                                                {
+                                                    "EndOffset": 34,
+                                                    "StartOffset": 32,
+                                                    "InternalName": "Y",
+                                                    "InternalType": "BasicLit",
+                                                    "Properties": {
+                                                        "Value": "10",
+                                                        "Kind": "INT"
+                                                    }
+                                                }
+                                            ],
+                                            "Properties": {
+                                                "Op": "*"
+                                            },
+                                            "StartOffset": 28,
+                                            "EndOffset": 34,
+                                            "InternalName": "Y"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "InternalName": "Values"
+                        }
+                    ],
+                    "InternalType": "ValueSpec"
+                }
+            ],
+            "InternalType": "ListOfSpec",
+            "InternalName": "Specs"
+        }
+    ]
+}
